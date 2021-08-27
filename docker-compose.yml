@@ -1,0 +1,89 @@
+version: "3.7"
+
+services:
+  users_service_db:
+    container_name: users_service_db
+    image: mysql:5.7.20
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: db
+    ports:
+      - "7201:3306"
+    volumes:
+      - users_service_data:/var/lib/mysql
+
+  chat_service_db:
+    container_name: chat_service_db
+    image: mysql:5.7.20
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: db
+    ports:
+      - "7200:3306"
+    volumes:
+      - chat_service_data:/var/lib/mysql
+
+  phpmyadmin:
+    container_name: phpmyadmin
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - "7300:80"
+    volumes:
+      - ./trabalho_individual/phpmyadmin/config.user.inc.php:/etc/phpmyadmin/config.user.inc.php
+    depends_on:
+      - chat_service_db
+      - users_service_db
+
+  chat_app:
+    container_name: chat_app
+    build:
+      context: ./trabalho_individual/chat-app
+      dockerfile: Dockerfile
+    volumes:
+      - ./trabalho_individual/chat-app:/chat_app/
+    depends_on:
+      - api_gateway
+    env_file: ./trabalho_individual/chat-app/.env
+    ports:
+      - "7001:7001"
+
+  api_gateway:
+    container_name: api_gateway
+    build:
+      context: ./trabalho_individual/api-gateway
+      dockerfile: Dockerfile
+    volumes:
+      - ./trabalho_individual/api-gateway:/gateway/
+    ports:
+      - "7000:7000"
+    depends_on:
+      - users_service
+      - chat_service
+
+  users_service:
+    container_name: users_service
+    build:
+      context: ./trabalho_individual/users-service
+      dockerfile: Dockerfile
+    volumes:
+      - ./trabalho_individual/users-service:/users_service/
+    ports:
+      - "7101:7101"
+    depends_on:
+      - users_service_db
+
+  chat_service:
+    container_name: chat_service
+    build:
+      context: ./trabalho_individual/chat-service
+      dockerfile: Dockerfile
+    volumes:
+      - ./trabalho_individual/chat-service:/chat_service/
+    ports:
+      - "7100:7100"
+    depends_on:
+      - chat_service_db
+
+volumes:
+  users_service_data:
+  chat_service_data:
